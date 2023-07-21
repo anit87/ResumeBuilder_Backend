@@ -43,7 +43,7 @@ router.post("/customers", (req, res) => {
                     if (!passwordResult) {
                         res.json({ message: "Some Login Error", Status: 404 })
                     } else {
-                        console.log(result);
+                        // console.log(result);
                         res.json({ message: "Login Success", Status: 200, email: result[0].cust_email, userId: result[0].cust_id })
                     }
                 });
@@ -53,7 +53,7 @@ router.post("/customers", (req, res) => {
 })
 router.post("/login", (req, res) => {
     const { first_name, last_name, email, password, action } = req.body
-    console.log(req.body);
+    // console.log(req.body);
     res.json({ message: "Success", status: 200 })
     const error = false
     // const error = true
@@ -79,7 +79,7 @@ router.post("/login", (req, res) => {
             res.json({ message: "Some Login Error", Status: 404 })
             return
         }
-        console.log(req.body);
+        // console.log(req.body);
 
         res.json({ message: "Login Success", status: 200 })
     }

@@ -1,7 +1,6 @@
 const express = require("express")
 const router = express.Router()
 require("dotenv").config()
-const connection = require("../utils/db")
 const { fetchQuery } = require("../utils/functions")
 
 
@@ -15,33 +14,29 @@ router.post("/", async (req, res) => {
             product_id,
             cart_price,
             cart_qty,
-            cart_status: 1
+            cart_status: '1'
         }
         const result = await fetchQuery(query, data)
         res.send(result)
     }
     if (action === "getCartItems") {
         const query = "SELECT * FROM cart where cust_id = ?"
-        connection.query(query, req.body.customer_id, function (err, result) {
-            if (err) {
-                console.log(err);
-            };
-            res.send(result)
-        });
+        const result = await fetchQuery(query, req.body.customer_id)
+        res.send(result)
     }
     if (action === "getAllCart") {
-        const query = "SELECT * FROM cart where cart_status = 1 and cust_id = 7"
-        connection.query(query, req.body.customer_id, function (err, result) {
-            if (err) {
-                console.log(err);
-            };
-            res.send(result)
-        });
+        const query = "SELECT * FROM cart where cust_id = ? and cart_status = '1'"
+        if (!req.body.customer_id) {
+            res.send("Customer ID not found")
+            return
+        }
+        const result = await fetchQuery(query, req.body.customer_id)
+        res.send(result)
     }
     if (action === "getCartDetail") {
         const query1 = `SELECT cart.*, p.product_name FROM cart 
         JOIN product as p ON cart.product_id = p.product_id 
-        where cart.cust_id = ? and cart.cart_status = 1`
+        where cart.cust_id = ? and cart.cart_status = '1'`
 
         const query2 = `SELECT CA.* , addons.addons_name
         FROM cart_addon as CA JOIN addons ON
@@ -64,7 +59,10 @@ router.post("/", async (req, res) => {
     }
     if (action === "DeleteCart") {
         const query = "DELETE FROM cart WHERE cart_id = ?"
-        const result = await fetchQuery(query, req.body.cart_id)
+        const query1 = "DELETE FROM cart_addon WHERE cart_id = ?"
+        let result = await fetchQuery(query, req.body.cart_id)
+        let result1 = await fetchQuery(query1, req.body.cart_id)
+
         if (result) {
             res.json({ Status: 200, message: "Success " })
         } else {
@@ -80,13 +78,16 @@ router.post("/", async (req, res) => {
             product_id,
             cart_price,
             cart_qty: 1,
-            cart_status: 1
+            cart_status: "1"
 
         }
         const result = await fetchQuery(query, data)
-        addons.forEach(async element => {
-            await fetchQuery(query2, { cart_id: result.insertId, addons_id: element.addonId, addons_price: element.addonPrice })
-        });
+        if (addons.length > 0) {
+            addons.forEach(async element => {
+                await fetchQuery(query2, { cart_id: result.insertId, addons_id: element.addonId, addons_price: element.addonPrice })
+            });
+        }
+
         if (result) {
             res.json({ Status: 200, message: "Success Cart Added" })
         } else {
@@ -187,21 +188,35 @@ router.post("/order_table", async (req, res) => {
         res.send(result)
     }
     if (action === "AllOrdersManage") {
-        const query = "Select * FROM order_table Where cust_id = ?"
+        const query = "Select * FROM order_table Where cust_id = ? AND order_status = '1' ORDER BY order_id DESC"
+
+        const query1 = `Select order_item.*, product.product_type_id FROM order_item
+        JOIN product ON order_item.product_id = product.product_id
+        Where order_id = ?`
 
         const result = await fetchQuery(query, req.body.customer_id)
-        res.send(result)
+
+        Promise.all( result.map(async order => {
+            const result1 = await fetchQuery(query1, order.order_id)
+            const isPackage = Boolean(result1.find(el => el.product_type_id == 1))
+            return { ...order, prdct_type: isPackage }
+
+        })
+        ).then(newResult=> res.send(newResult))
+        
     }
     if (action === "WriteResume") {
         console.log(req.body);
         res.send({ message: "True" })
     }
     if (action === "PayPalSuccessData") {
-        console.log(req.body);
+        console.log(req.body,"PayPalSuccessData");
         res.send({ message: "PayPalSuccessData" })
     }
     if (action === "UpdatePaypalOrder") {
-
+        const removeItemsFromCart = `UPDATE cart set cart_status = '0' Where ` 
+        
+        // console.log(req.body,"-----UpdatePaypalOrder--------", req.body);
         const order_status = (req.body.paypalstatus === 'COMPLETED') ? "1" : "0"
         const data = {
             paypal_transaction_id: req.body.paypaltransectionid,
@@ -210,6 +225,7 @@ router.post("/order_table", async (req, res) => {
 
         const query = "UPDATE order_table SET ? WHERE paypal_order_number = ?"
         const result = await fetchQuery(query, [data, req.body.paypalorderid])
+
         res.send(result)
     }
 })
@@ -219,8 +235,8 @@ router.post("/user_stepper_form_db", async (req, res) => {
     const { action } = b
 
     if (action === "getAllStepForm") {
-        const query = "Select * FROM user_stepper_form Where cust_id = ?"
-        const result = await fetchQuery(query, req.body.cust_id)
+        const query = "Select * FROM user_stepper_form Where cust_id = ? and order_number = ?"
+        const result = await fetchQuery(query, [req.body.cust_id, req.body.order_id])
         res.send(result)
     }
     if (action === "NewStepFormUser") {
@@ -305,14 +321,14 @@ router.post("/user_stepper_form_db", async (req, res) => {
             b.other_info,
             b.order_id
         ]
-        console.log("------------------------------------update form-----------");
+        // console.log("update form");
         const result = await fetchQuery(query, data)
         if (result) {
             res.status(200).json({ Status: 200, message: "Update Successfully" })
-        } else {         
+        } else {
             res.status(400).json({ message: "Update Not Success" })
         }
-        
+
     }
 })
 

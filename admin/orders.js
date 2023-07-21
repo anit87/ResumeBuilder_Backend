@@ -14,7 +14,7 @@ router.post("/order_table", async (req, res) => {
         res.send(result)
     }
     if (action === "AdminOrderInnerData") {
-        const query = `SELECT ot.*, ct.cust_id, ct.cust_fname, ct.cust_lname
+        const query = `SELECT ot.*, ct.cust_id, ct.cust_fname, ct.cust_lname,ct.cust_email
         FROM order_table as ot 
         JOIN customer_table as ct ON ot.cust_id=ct.cust_id
         where ot.order_id= ?`
