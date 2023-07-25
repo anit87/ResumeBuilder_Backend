@@ -2,78 +2,102 @@ const express = require("express")
 const router = express.Router()
 require("dotenv").config()
 const { fetchQuery } = require("../utils/functions")
-const KJUR = require('jsrsasign')
 const axios = require("axios")
+const qs = require('query-string');
+const httpErrorHandler = require('../utils/httpErrorHandler');
 
+// Expects express req object as paramter
+const logHttpErrorPath = ({ originalUrl, method }) => `${method}: ${originalUrl}`;
 
+const { ZOOM_OAUTH_TOKEN_URL, ZOOM_OAUTH_AUTHORIZATION_URL, ZOOM_API_BASE_URL, ZOOM_TOKEN_RETRIEVED, ZOOM_OAUTH_ERROR } = require('../constants');
+const { ZOOM_Account_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET, ZOOM_REDIRECT_URL, ZOOM_CLIENT_ID_OAuth, ZOOM_CLIENT_SECRET_OAuth } = process.env;
 
+// Zoom OAuth
+router.get('/token', async (req, res) => {
+    const { code } = req.query;
+    if (code) {
+        try {
+            const zoomAuthRequest = await axios.post(
+                ZOOM_OAUTH_TOKEN_URL,
+                qs.stringify({
+                    grant_type: 'authorization_code',
+                    code,
+                    redirect_uri: ZOOM_REDIRECT_URL,
+                }),
+                {
+                    headers: {
+                        Authorization: `Basic ${Buffer.from(`${ZOOM_CLIENT_ID_OAuth}:${ZOOM_CLIENT_SECRET_OAuth}`).toString('base64')}`,
+                    },
+                },
+            );
+            const { access_token, refresh_token } = await zoomAuthRequest.data;
+            res.json({ access_token, refresh_token })
+        } catch (error) {
+            return httpErrorHandler({
+                error,
+                res,
+                customMessage: ZOOM_OAUTH_ERROR,
+                logErrorPath: logHttpErrorPath(req),
+            });
+        }
+    } else {
+        // Request authorization code in preparation for access token request
+        return res.redirect(`${ZOOM_OAUTH_AUTHORIZATION_URL}?${qs.stringify({
+            response_type: 'code',
+            client_id: ZOOM_CLIENT_ID,
+            redirect_uri: ZOOM_REDIRECT_URL,
+        })}`);
+    }
+    return null;
+});
 
-function generateSignature(key, secret, meetingNumber, role) {
+//Zoom Server to Server 
+router.post("/zoom", async (req, res) => {
+    try {
+        const request = await axios.post(
+            "https://zoom.us/oauth/token",
+            qs.stringify({
+                grant_type: 'account_credentials',
+                account_id: ZOOM_Account_ID
+            }),
+            {
+                headers: {
+                    Authorization: `Basic ${Buffer.from(`${ZOOM_CLIENT_ID}:${ZOOM_CLIENT_SECRET}`).toString('base64')}`
+                }
+            }
+        );
+        const response = await request.data;
+        res.send({ access_token: response.access_token })
 
-    const iat = Math.round(new Date().getTime() / 1000) - 30
-    const exp = iat + 60 * 60 * 2
-    const oHeader = { alg: 'HS256', typ: 'JWT' }
-
-    const oPayload = {
-        sdkKey: key,
-        appKey: key,
-        mn: meetingNumber,
-        role: role,
-        iat: iat,
-        exp: exp,
-        tokenExp: exp
+    } catch (e) {
+        console.error(e?.message, e?.response?.data);
     }
 
-    const sHeader = JSON.stringify(oHeader)
-    const sPayload = JSON.stringify(oPayload)
-    const sdkJWT = KJUR.jws.JWS.sign('HS256', sHeader, sPayload, secret)
-    return sdkJWT
-}
-
-
-router.post("/zoom", async (req, res) => {
-    console.log("zoom - ", req.body);
-    const access_token = await generateSignature(process.env.ZOOM_MEETING_CLIENT_ID, process.env.ZOOM_MEETING_CLIENT_SECRET, 123456789, 0)
-    console.log("zoom ", access_token);
-    res.json({ access_token })
 })
 
-
-router.post("/newmeetingq", async (req, res) => {
-    console.log("---------------------------mee");
-    email = "anitbusinesswebsoft@gmail.com";
-    const options = {
-        method: "POST",
-        uri: "https://api.zoom.us/v2/users/" + email + "/meetings",
-        body: {
-            topic: "test create meeting",
+router.post("/newmeeting", async (req, res) => {
+    try {
+        const uri = ZOOM_API_BASE_URL + "/users/me/meetings/"
+        const body = {
+            topic: "Test Meeting",
             type: 1,
+            start_time: "2023-07-26T07:32:55Z",
+            duration: 10,
             settings: {
                 host_video: "true",
                 participant_video: "true"
             }
-        },
-        auth: {
-            bearer: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzZGtLZXkiOiIwMzNaa1FrU1RWaVdndUxyZ1lZMUEiLCJhcHBLZXkiOiIwMzNaa1FrU1RWaVdndUxyZ1lZMUEiLCJtbiI6MTIzNDU2Nzg5LCJyb2xlIjowLCJpYXQiOjE2ODk5MjA0MjAsImV4cCI6MTY4OTkyNzYyMCwidG9rZW5FeHAiOjE2ODk5Mjc2MjB9.HI8KKjllEOhLrwWEAWJJ2LY2DnZOmAbsTgz0kNKn8AQ"
-        },
-        headers: {
-            "User-Agent": "Zoom-api-Jwt-Request",
-            "content-type": "application/json"
-        },
-        json: true
-    };
-
-    await axios(options)
-        .then(function (response) {
-            console.log("response is: ", response);
-            res.send("create meeting result: " + JSON.stringify(response));
+        }
+        const headers = {
+            Authorization: `Bearer ${req.body.token}`
+        }
+        const response = await axios.post(uri, body, {
+            headers
         })
-        .catch(function (err) {
-            // API call failed...
-            console.log("API call failed, reason ", err);
-        });
+        res.json(response.data)
+    } catch (error) {
+        console.log(error);
+    }
 });
-
-
 
 module.exports = router
