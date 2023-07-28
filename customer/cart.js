@@ -21,6 +21,10 @@ router.post("/", async (req, res) => {
     }
     if (action === "getCartItems") {
         const query = "SELECT * FROM cart where cust_id = ?"
+        if (!req.body.customer_id) {
+            res.send("Customer ID not found")
+            return
+        }
         const result = await fetchQuery(query, req.body.customer_id)
         res.send(result)
     }
@@ -43,6 +47,12 @@ router.post("/", async (req, res) => {
         CA.addons_id = addons.addons_id where cart_id = ?`
 
         const query3 = "Select * FROM product_image"
+
+        if (!req.body.customer_id) {
+            res.send("Customer ID not found")
+            return
+        }
+        
 
         const cartResult = await fetchQuery(query1, req.body.customer_id)
         const images = await fetchQuery(query3)
@@ -107,6 +117,7 @@ router.post("/", async (req, res) => {
         res.send("Cart Updated")
     }
 })
+
 router.post("/customer_address_chekout", async (req, res) => {
     const { action } = req.body
     if (action === "AddCustomerAddress") {

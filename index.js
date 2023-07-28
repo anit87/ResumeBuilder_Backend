@@ -35,7 +35,6 @@ app.use("/chatting", chatRouter)
 app.use("/", zoomRouter)
 
 app.get("/", (req, res) => {
-    console.log("-----app-------");
     connection.query("select * from faq", (err, result) => {
         if (err) {
             console.log(err);
@@ -47,7 +46,6 @@ app.get("/", (req, res) => {
 app.post("/recaptcha", async (req, res) => {
     const url = `https://www.google.com/recaptcha/api/siteverify?secret=${"6Lc79fAiAAAAANgmO4wKjAsKbKCa3LMNDFTDMwgn"}&response=${req.body.id}`
 
-
     fetch(url, {
         method: 'POST',
         headers: {
@@ -56,7 +54,6 @@ app.post("/recaptcha", async (req, res) => {
     })
         .then(response => response.json())
         .then(result => {
-            console.log("---------------------------------",result);
             res.json(result)
         })
         .catch(error => {

@@ -1,7 +1,7 @@
 const express = require("express")
 const router = express.Router()
 require("dotenv").config()
-const { fetchQuery } = require("../utils/functions")
+const { response, fetchQuery, sendEmail, zoomToken, createMeeting, } = require("../utils/functions")
 const axios = require("axios")
 const qs = require('query-string');
 const httpErrorHandler = require('../utils/httpErrorHandler');
@@ -9,47 +9,10 @@ const httpErrorHandler = require('../utils/httpErrorHandler');
 // Expects express req object as paramter
 const logHttpErrorPath = ({ originalUrl, method }) => `${method}: ${originalUrl}`;
 
-const { ZOOM_OAUTH_TOKEN_URL, ZOOM_OAUTH_AUTHORIZATION_URL, ZOOM_API_BASE_URL, ZOOM_TOKEN_RETRIEVED, ZOOM_OAUTH_ERROR } = require('../constants');
-const { ZOOM_Account_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET, ZOOM_REDIRECT_URL, ZOOM_CLIENT_ID_OAuth, ZOOM_CLIENT_SECRET_OAuth } = process.env;
+const { ZOOM_API_BASE_URL, ZOOM_TOKEN_RETRIEVED, ZOOM_OAUTH_ERROR } = require('../constants');
+const { ZOOM_Account_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET } = process.env;
 
-// Zoom OAuth
-router.get('/token', async (req, res) => {
-    const { code } = req.query;
-    if (code) {
-        try {
-            const zoomAuthRequest = await axios.post(
-                ZOOM_OAUTH_TOKEN_URL,
-                qs.stringify({
-                    grant_type: 'authorization_code',
-                    code,
-                    redirect_uri: ZOOM_REDIRECT_URL,
-                }),
-                {
-                    headers: {
-                        Authorization: `Basic ${Buffer.from(`${ZOOM_CLIENT_ID_OAuth}:${ZOOM_CLIENT_SECRET_OAuth}`).toString('base64')}`,
-                    },
-                },
-            );
-            const { access_token, refresh_token } = await zoomAuthRequest.data;
-            res.json({ access_token, refresh_token })
-        } catch (error) {
-            return httpErrorHandler({
-                error,
-                res,
-                customMessage: ZOOM_OAUTH_ERROR,
-                logErrorPath: logHttpErrorPath(req),
-            });
-        }
-    } else {
-        // Request authorization code in preparation for access token request
-        return res.redirect(`${ZOOM_OAUTH_AUTHORIZATION_URL}?${qs.stringify({
-            response_type: 'code',
-            client_id: ZOOM_CLIENT_ID,
-            redirect_uri: ZOOM_REDIRECT_URL,
-        })}`);
-    }
-    return null;
-});
+
 
 //Zoom Server to Server 
 router.post("/zoom", async (req, res) => {
@@ -75,6 +38,7 @@ router.post("/zoom", async (req, res) => {
 
 })
 
+
 router.post("/newmeeting", async (req, res) => {
     try {
         const uri = ZOOM_API_BASE_URL + "/users/me/meetings/"
@@ -99,5 +63,69 @@ router.post("/newmeeting", async (req, res) => {
         console.log(error);
     }
 });
+
+// cust request for meeting
+router.post("/requestmeeting", async (req, res) => {
+    const checkReq = `SELECT * FROM zoom_meeting WHERE order_id = ? AND approvedStatus=0`
+    const alreadyRequested = await fetchQuery(checkReq, req.body.data.order_id)
+    if (alreadyRequested.length > 0) {
+        res.json(response(400, "Your Request is pending"))
+        return
+    }
+
+    const query = `INSERT INTO zoom_meeting SET ?`
+    const result = await fetchQuery(query, req.body.data)
+    if (result) {
+        res.json(response(200, "Your Request has been sent"))
+    } else {
+        res.json(response(200, "Your Request has not been sent"))
+    }
+
+})
+
+router.post("/getallmeets", async (req, res) => {
+    const query = `SELECT zoom_meeting.*, CT.cust_fname, CT.cust_lname, CT.cust_email, OT.order_number,OT.order_created_at FROM zoom_meeting 
+    JOIN customer_table as CT ON zoom_meeting.cust_id = CT.cust_id
+    JOIN order_table as OT ON zoom_meeting.order_id = OT.order_id
+    where zoom_meeting.order_id = ? ORDER BY meeting_id DESC`
+
+    if (!req.body.order_id) {
+        res.status(400).send("Order Number Not Found")
+        return
+    }
+    const result = await fetchQuery(query, req.body.order_id)
+    if (result) {
+        res.json({ status: true, data: result })
+    } else {
+        res.json({ status: false, data: "Records not found" })
+    }
+
+})
+
+// sendEmail(custEmail, sub, htmlCode).catch(error => console.error(error));
+
+router.post("/approveStatus", async (req, res) => {
+    if (!req.body.id) {
+        res.status(400).send("ID Not Found")
+        return
+    }
+    console.log("for create meet 112 --- ", req.body);
+    const query = "UPDATE zoom_meeting SET approvedStatus = 1, meetingTime = ? WHERE meeting_id = ?"
+    
+    const meetInfo = await createMeeting(req.body.topic,req.body.meetingTime, req.body.duration )
+    
+    const result = await fetchQuery(query, [req.body.meetingTime, req.body.id])
+    console.log("meet info 118 --- ", meetInfo);
+    // topic, start_time, duration
+    await sendEmail(req.body.cust_email, 'Zoom Meeting', `<h6> Your Email is scheduled at ${req.body.meetingTime} </h6>`).catch(error => console.error(error))
+
+    if (result) {
+        // res.json(response(200,"Your Request has been sent"))
+        res.json({ status: true, message: "Request Approved" })
+    } else {
+        res.json({ status: false, message: "Request Not Approved" })
+    }
+
+})
 
 module.exports = router
