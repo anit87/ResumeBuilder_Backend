@@ -1,10 +1,13 @@
 const connection = require("./db")
-const nodemailer = require("nodemailer");
 require("dotenv").config()
 const axios = require("axios")
 const qs = require('query-string');
 const { ZOOM_Account_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET } = process.env;
 const { ZOOM_API_BASE_URL } = require('../constants');
+
+const nodemailer = require("nodemailer");
+const hbs = require('nodemailer-express-handlebars')
+const path = require('path')
 
 const response = (status, message) => ({ status, message })
 
@@ -43,12 +46,10 @@ const zoomToken = function () {
         }
     });
 };
-const createMeeting =async function (topic, start_time, duration ) {
+const createMeeting = async function (topic, start_time, duration) {
     return new Promise(async function (resolve, reject) {
-        console.log("48 ---- ",topic, start_time, duration);
         try {
             const token = await zoomToken()
-            console.log("51 ", token);
             const uri = ZOOM_API_BASE_URL + "/users/me/meetings/"
             const body = {
                 topic,
@@ -61,18 +62,18 @@ const createMeeting =async function (topic, start_time, duration ) {
                 }
             }
             const headers = {
-                Authorization: `Bearer ${token}`
+                Authorization: `Bearer ${token.access_token}`
             }
             const response = await axios.post(uri, body, {
                 headers
             })
-            console.log("70 ", response);
-            resolve(response)
+            resolve(response.data)
         } catch (error) {
             reject(Error(error));
         }
     });
 };
+
 
 const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -83,12 +84,32 @@ const transporter = nodemailer.createTransport({
         pass: 'jkxdbdwwcblcpkkp'
     }
 });
-async function sendEmail(custEmail, sub, htmlCode) {
+
+// point to the template folder
+const handlebarOptions = {
+    viewEngine: {
+        partialsDir: path.resolve('./views/'),
+        defaultLayout: false,
+    },
+    viewPath: path.resolve('./views/'),
+};
+
+// use a template file with nodemailer
+transporter.use('compile', hbs(handlebarOptions))
+
+
+async function sendEmail(custEmail, sub, join_with_id, zoom_password, start_url, meeting_date) {
     const info = await transporter.sendMail({
         from: `"Flawless Resume Team" <${process.env.ADMIN_EMAIL}>`,
         to: custEmail,
-        subject: sub, // Subject line
-        html: htmlCode, // html body
+        subject: sub,
+        template: 'zoomTemplate', // the name of the template file i.e email.handlebars
+        context: {
+            join_with_id,
+            zoom_password,
+            start_url,
+            meeting_date
+        }
     });
     console.log("Message sent: %s", info.messageId);
 }

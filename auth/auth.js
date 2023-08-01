@@ -4,7 +4,8 @@ const bcrypt = require("bcrypt")
 const router = express.Router()
 require("dotenv").config()
 const saltRounds = 10;
-const connection = require("../utils/db")
+const connection = require("../utils/db");
+const { fetchQuery } = require("../utils/functions");
 
 router.post("/customers", (req, res) => {
     const { first_name, last_name, email, password, action } = req.body
@@ -51,39 +52,20 @@ router.post("/customers", (req, res) => {
         });
     }
 })
-router.post("/login", (req, res) => {
-    const { first_name, last_name, email, password, action } = req.body
-    // console.log(req.body);
-    res.json({ message: "Success", status: 200 })
-    const error = false
-    // const error = true
-    if (action === "AddNewCustomers") {
-        if (error) {
-            res.json({ message: "Some Error", Status: 404 })
-            return
-        }
-
-        res.json({ message: "Success", Status: 200 })
+router.post("/login", async (req, res) => {
+    const { user_email, password } = req.body
+    const getEmailQuery = 'SELECT * from login where user_email = ?'
+    const getAdmin = await fetchQuery(getEmailQuery, user_email)
+    console.log("ad--------- ", req.body, " * * ",getAdmin );
+    if (!getAdmin) {
+        res.json({ message: "Some Login Error", status: 401 })
+        return
     }
-
-    if (action === "loginCustomers") {
-        if (error) {
-            res.json({ message: "Some Login Error", Status: 404 })
-            return
-        }
-
-        res.json({ message: "Login Success", Status: 200 })
+    if (getAdmin[0].password === password) {
+        res.json({ message: "Login Success", status: 200, user_email: user_email })
+    }else{
+        res.status(401).json({ message: "Login Success", status: 400, user_email: user_email })
     }
-    if (action === "LOGIN") {
-        if (error) {
-            res.json({ message: "Some Login Error", Status: 404 })
-            return
-        }
-        // console.log(req.body);
-
-        res.json({ message: "Login Success", status: 200 })
-    }
-
 })
 
 module.exports = router

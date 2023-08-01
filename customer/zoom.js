@@ -43,9 +43,9 @@ router.post("/newmeeting", async (req, res) => {
     try {
         const uri = ZOOM_API_BASE_URL + "/users/me/meetings/"
         const body = {
-            topic: "Test Meeting",
+            topic: "Test Meeting 1",
             type: 1,
-            start_time: "2023-07-26T07:32:55Z",
+            start_time: "2023-08-01T07:32:55Z",
             duration: 10,
             settings: {
                 host_video: "true",
@@ -109,18 +109,22 @@ router.post("/approveStatus", async (req, res) => {
         res.status(400).send("ID Not Found")
         return
     }
-    console.log("for create meet 112 --- ", req.body);
-    const query = "UPDATE zoom_meeting SET approvedStatus = 1, meetingTime = ? WHERE meeting_id = ?"
-    
-    const meetInfo = await createMeeting(req.body.topic,req.body.meetingTime, req.body.duration )
-    
-    const result = await fetchQuery(query, [req.body.meetingTime, req.body.id])
-    console.log("meet info 118 --- ", meetInfo);
+    const query = `UPDATE zoom_meeting SET 
+    approvedStatus = 1, meetingTime = ?, join_url = ?, 	start_url = ?, join_with_id = ?, zoom_password = ? 
+    WHERE meeting_id = ?`
+
+    const meetInfo = await createMeeting(req.body.topic, req.body.meetingTime, req.body.duration)
+
+    const data = [req.body.meetingTime, meetInfo.join_url, meetInfo.start_url, meetInfo.id, meetInfo.password, req.body.id]
+
+    const result = await fetchQuery(query, data)
+
     // topic, start_time, duration
-    await sendEmail(req.body.cust_email, 'Zoom Meeting', `<h6> Your Email is scheduled at ${req.body.meetingTime} </h6>`).catch(error => console.error(error))
+
+    // custEmail, sub, join_with_id, zoom_password, start_url, meeting_date
+    await sendEmail(req.body.cust_email, 'Zoom Meeting', meetInfo.id, meetInfo.password, meetInfo.join_url, req.body.meetingTime).catch(error => console.error(error))
 
     if (result) {
-        // res.json(response(200,"Your Request has been sent"))
         res.json({ status: true, message: "Request Approved" })
     } else {
         res.json({ status: false, message: "Request Not Approved" })
