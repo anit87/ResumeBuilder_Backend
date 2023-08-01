@@ -36,6 +36,7 @@ app.use("/chatting", chatRouter)
 app.use("/", zoomRouter)
 
 app.get("/", (req, res) => {
+    console.log("env - ", process.env.testenv)
     connection.query("select * from faq", (err, result) => {
         if (err) {
             console.log(err);
