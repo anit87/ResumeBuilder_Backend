@@ -52,7 +52,7 @@ router.post("/", async (req, res) => {
             res.send("Customer ID not found")
             return
         }
-        
+
 
         const cartResult = await fetchQuery(query1, req.body.customer_id)
         const images = await fetchQuery(query3)
@@ -207,27 +207,29 @@ router.post("/order_table", async (req, res) => {
 
         const result = await fetchQuery(query, req.body.customer_id)
 
-        Promise.all( result.map(async order => {
+        Promise.all(result.map(async order => {
             const result1 = await fetchQuery(query1, order.order_id)
             const isPackage = Boolean(result1.find(el => el.product_type_id == 1))
             return { ...order, prdct_type: isPackage }
 
         })
-        ).then(newResult=> res.send(newResult))
-        
+        ).then(newResult => res.json({ status: true, result: newResult }))
+
     }
     if (action === "WriteResume") {
         console.log(req.body);
         res.send({ message: "True" })
     }
     if (action === "PayPalSuccessData") {
-        console.log(req.body,"PayPalSuccessData");
-        res.send({ message: "PayPalSuccessData" })
+
+        const query = "SELECT * FROM order_table where order_number = ?"
+        const result = await fetchQuery(query, req.body.paypalorderid)
+        res.send(result)
     }
     if (action === "UpdatePaypalOrder") {
-        const removeItemsFromCart = `UPDATE cart set cart_status = '0' Where ` 
+        const removeItemsFromCart = `UPDATE cart set cart_status = '0' Where cart_id = ?`
         
-        // console.log(req.body,"-----UpdatePaypalOrder--------", req.body);
+        console.log("UpdatePaypalOrder", req.body);
         const order_status = (req.body.paypalstatus === 'COMPLETED') ? "1" : "0"
         const data = {
             paypal_transaction_id: req.body.paypaltransectionid,
@@ -235,6 +237,7 @@ router.post("/order_table", async (req, res) => {
         }
 
         const query = "UPDATE order_table SET ? WHERE paypal_order_number = ?"
+        await fetchQuery(removeItemsFromCart, req.body.cartid)
         const result = await fetchQuery(query, [data, req.body.paypalorderid])
 
         res.send(result)

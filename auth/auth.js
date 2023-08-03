@@ -55,9 +55,12 @@ router.post("/customers", (req, res) => {
 router.post("/login", async (req, res) => {
     const { user_email, password } = req.body
     const getEmailQuery = 'SELECT * from login where user_email = ?'
+    if (!user_email && !password) {     
+        res.json({ message: "Please Insert Email and Password", status: 401 })
+        return
+    }
     const getAdmin = await fetchQuery(getEmailQuery, user_email)
-    console.log("ad--------- ", req.body, " * * ",getAdmin );
-    if (!getAdmin) {
+    if (getAdmin.length<1) {
         res.json({ message: "Some Login Error", status: 401 })
         return
     }

@@ -15,7 +15,7 @@ const chatRouter = require("./customer/chatting")
 const zoomRouter = require("./customer/zoom")
 const connection = require("./utils/db")
 const { fetchQuery, sendEmail } = require("./utils/functions")
-
+require("dotenv").config()
 const port = 4000
 app.use(cors())
 app.use(express.json())
@@ -69,7 +69,11 @@ app.post("/recaptcha", async (req, res) => {
 
 app.post("/mailData", async (req, res) => {
     const result = await fetchQuery("INSERT INTO mail_data SET ?", req.body)
-    res.json({ success: true })
+    if (result) {
+        res.json({ status: true, message: "Your Form is submitted" })
+    }else {
+        res.json({ status: false, message: "Please Send Again" })
+    }
 })
 
 app.listen(port, () => console.log(`Listening on port ${port}..`)); 
