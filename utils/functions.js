@@ -42,7 +42,7 @@ const zoomToken = function () {
             const response = await request.data;
             resolve({ access_token: response.access_token })
         } catch (error) {
-            reject(Error(error));
+            reject(Error("Token Error ", error.message));
         }
     });
 };
@@ -69,7 +69,8 @@ const createMeeting = async function (topic, start_time, duration) {
             })
             resolve(response.data)
         } catch (error) {
-            reject(Error(error));
+            console.log("Error in Meeting", error.message);
+            reject(Error(error.message));
         }
     });
 };

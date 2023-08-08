@@ -10,13 +10,14 @@ const localhost = {
 
 const serverSettings = {
     host: 'sql6.freemysqlhosting.net',
-    user: 'sql6636713',
-    password: 'evRTg53LqW',
-    database: 'sql6636713',
+    user: 'sql6638326',
+    password: 'eVWpHDZEDi',
+    database: 'sql6638326',
     multipleStatements: true
 }
 
 const connection = mysql.createConnection(serverSettings);
+// const connection = mysql.createConnection(localhost);
 
 connection.connect((err) => {
     if (!err)

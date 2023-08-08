@@ -130,7 +130,7 @@ router.post("/product_image", upload.array("file[]", 5), (req, res) => {
         })
     }
     if (action === "UpdateProductImage") {
-        console.log(req.body);
+        // console.log(req.body);
         const data = {
             product_name,
             product_description,
@@ -141,7 +141,7 @@ router.post("/product_image", upload.array("file[]", 5), (req, res) => {
             product_book_title,
             product_id
         }
-        connection.query("UPDATE product SET ? WHERE product_type_id = 2 and product_id = 3", [data, product_id], (err, result, fields) => {
+        connection.query("UPDATE product SET ? WHERE product_type_id = 2 and product_id = ?", [data, product_id], (err, result, fields) => {
             if (err) {
                 console.log(err);
                 res.json({ status: 400, message: "Update Book Fails" })

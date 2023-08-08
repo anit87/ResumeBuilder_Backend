@@ -105,28 +105,33 @@ router.post("/getallmeets", async (req, res) => {
 // sendEmail(custEmail, sub, htmlCode).catch(error => console.error(error));
 
 router.post("/approveStatus", async (req, res) => {
-    if (!req.body.id) {
-        res.status(400).send("ID Not Found")
-        return
-    }
-    const query = `UPDATE zoom_meeting SET 
-    approvedStatus = 1, meetingTime = ?, join_url = ?, 	start_url = ?, join_with_id = ?, zoom_password = ? 
-    WHERE meeting_id = ?`
+    try {
+        if (!req.body.id) {
+            res.status(400).send("ID Not Found")
+            return
+        }
+        const query = `UPDATE zoom_meeting SET 
+            approvedStatus = 1, meetingTime = ?, join_url = ?, 	start_url = ?, join_with_id = ?, zoom_password = ? 
+            WHERE meeting_id = ?
+        `
+        const meetInfo = await createMeeting(req.body.topic, req.body.meetingTime, req.body.duration)
 
-    const meetInfo = await createMeeting(req.body.topic, req.body.meetingTime, req.body.duration)
+        const data = [req.body.meetingTime, meetInfo.join_url, meetInfo.start_url, meetInfo.id, meetInfo.password, req.body.id]
 
-    const data = [req.body.meetingTime, meetInfo.join_url, meetInfo.start_url, meetInfo.id, meetInfo.password, req.body.id]
+        const result = await fetchQuery(query, data)
 
-    const result = await fetchQuery(query, data)
+        // topic, start_time, duration
 
-    // topic, start_time, duration
+        // custEmail, sub, join_with_id, zoom_password, start_url, meeting_date
+        await sendEmail(req.body.cust_email, 'Zoom Meeting', meetInfo.id, meetInfo.password, meetInfo.join_url, req.body.meetingTime).catch(error => console.error(error))
 
-    // custEmail, sub, join_with_id, zoom_password, start_url, meeting_date
-    await sendEmail(req.body.cust_email, 'Zoom Meeting', meetInfo.id, meetInfo.password, meetInfo.join_url, req.body.meetingTime).catch(error => console.error(error))
-
-    if (result) {
-        res.json({ status: true, message: "Request Approved" })
-    } else {
+        if (result) {
+            res.json({ status: true, message: "Request Approved" })
+        } else {
+            res.json({ status: false, message: "Request Not Approved" })
+        }
+    } catch (error) {
+        console.log("Error aaaaaaa ",error);
         res.json({ status: false, message: "Request Not Approved" })
     }
 

@@ -284,11 +284,12 @@ router.post("/user_stepper_form_db", async (req, res) => {
             stepfrm_direct_report: b.direct_report,
             stepfrm_description: b.description,
             stepfrm_techinical_skill: b.techinical_skill,
-            stepfrm_other_info: b.other_info
+            stepfrm_other_info: b.other_info,
+            stepfrm_updated_at: new Date()
         }
         const query = 'INSERT INTO user_stepper_form SET ?'
         const result = await fetchQuery(query, data)
-        res.send(result)
+        res.json({Status:200,message:"Saved Successfully"})
     }
     if (action === "getStepFormByID") {
         const query = `SELECT * FROM user_stepper_form where order_number = ?`
@@ -304,7 +305,7 @@ router.post("/user_stepper_form_db", async (req, res) => {
         stepfrm_name = ?, stepfrm_lName = ?, stepfrm_email = ?, stepfrm_address = ?, stepfrm_appartment = ?, stepfrm_city = ?, stepfrm_postal_code = ?, stepfrm_country = ?, stepfrm_phone = ?, stepfrm_linkeDin = ?,
         stepfrm_institute = ?, stepfrm_location = ?, stepfrm_degree = ?, stepfrm_concentration = ?, stepfrm_start_date = ?, stepfrm_toend_date = ?, stepfrm_graduation = ?, stepfrm_graduation_date = ?,
         stepfrm_company_name = ?, stepfrm_company_address = ?, stepfrm_date_of_form = ?, stepfrm_toemployment = ?, stepfrm_job_title = ?, stepfrm_direct_report = ?, stepfrm_description = ?,
-        stepfrm_techinical_skill = ?, stepfrm_other_info = ? WHERE order_number = ?`
+        stepfrm_techinical_skill = ?, stepfrm_other_info = ?, stepfrm_updated_at= ? WHERE order_number = ?`
         const data = [
             b.name,
             b.lName,
@@ -333,6 +334,7 @@ router.post("/user_stepper_form_db", async (req, res) => {
             b.description,
             b.techinical_skill,
             b.other_info,
+            new Date(),
             b.order_id
         ]
         // console.log("update form");
