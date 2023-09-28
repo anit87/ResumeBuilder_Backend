@@ -18,7 +18,8 @@ router.post("/customers", (req, res) => {
             cust_lname: last_name,
             cust_email: email,
             cust_password: hashPassword,
-            cust_status: 1
+            cust_status: 1, 
+            cust_updated_at:new Date()
         }
         const query = "INSERT INTO customer_table SET ?"
         connection.query(query, data, function (err, result) {
