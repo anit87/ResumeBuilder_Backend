@@ -53,7 +53,6 @@ router.post("/", async (req, res) => {
             return
         }
 
-
         const cartResult = await fetchQuery(query1, req.body.customer_id)
         const images = await fetchQuery(query3)
         Promise.all(

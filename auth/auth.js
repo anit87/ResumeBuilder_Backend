@@ -11,6 +11,7 @@ router.post("/customers", (req, res) => {
     const { first_name, last_name, email, password, action } = req.body
 
     if (action === "AddNewCustomers") {
+        console.log("add new cust ", req.body);
         let hashPassword = bcrypt.hashSync(password, saltRounds)
         const data = {
             cust_fname: first_name,
@@ -22,7 +23,7 @@ router.post("/customers", (req, res) => {
         const query = "INSERT INTO customer_table SET ?"
         connection.query(query, data, function (err, result) {
             if (err) {
-                console.log(err);
+                console.log("error in add new cust - ",err);
                 res.json({ message: "Some Error", Status: 404 })
                 return
             };

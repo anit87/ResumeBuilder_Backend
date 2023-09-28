@@ -1,14 +1,21 @@
-const mysql = require('mysql');
+const mysql = require('mysql2');
+
+const serverSettings = {
+    host: 'localhost',
+    user: 'root',
+    password: 'Apple12bws',
+    database: 'resume_builder'
+}
+
 //MySQL details
 const localhost = {
     host: 'localhost',
     user: 'root',
     password: '',
-    database: 'resume_builder',
-    multipleStatements: true
+    database: 'resume_builder'
 }
 
-const serverSettings = {
+const serverSettings1 = {
     host: 'sql6.freemysqlhosting.net',
     user: 'sql6638326',
     password: 'eVWpHDZEDi',
@@ -17,7 +24,6 @@ const serverSettings = {
 }
 
 const connection = mysql.createConnection(serverSettings);
-// const connection = mysql.createConnection(localhost);
 
 connection.connect((err) => {
     if (!err)

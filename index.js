@@ -16,7 +16,7 @@ const zoomRouter = require("./customer/zoom")
 const connection = require("./utils/db")
 const { fetchQuery, sendEmail } = require("./utils/functions")
 require("dotenv").config()
-const port = 4000
+const port = 4002
 app.use(cors())
 app.use(express.json())
 app.use(express.static('public'))
