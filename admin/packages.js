@@ -6,29 +6,33 @@ const { fetchQuery } = require("../utils/functions")
 
 router.post("/package", (req, res) => {
     const { action } = req.body
-    if (action === "UpdateProductPackageAddon") {
-        const { name, price, id } = req.body;
-        const data = {
-            addons_name: name,
-            addons_price: price,
-            addons_id: id
-        }
+    try {
+        if (action === "UpdateProductPackageAddon") {
+            const { name, price, id } = req.body;
+            const data = {
+                addons_name: name,
+                addons_price: price,
+                addons_id: id
+            }
 
-        connection.query("UPDATE addons SET ? WHERE addons_id = ?", [data, id], function (err, result) {
-            if (err) {
-                res.json({ Status: 400, message: "Updating Addons Fails" })
-            };
-            res.json({ Status: 200, message: "Success Addons Update" })
-        });
-    }
-    if (action === "DeleteAddons") {
-        connection.query("DELETE FROM addons WHERE addons_id = ?", req.body.id, function (err, result) {
-            if (err) {
-                res.json({ status: 400, message: "Delete Book Fails" })
-                return
-            };
-            res.json({ status: 200, message: "Success Book Deleted" })
-        });
+            connection.query("UPDATE addons SET ? WHERE addons_id = ?", [data, id], function (err, result) {
+                if (err) {
+                    res.json({ Status: 400, message: "Updating Addons Fails" })
+                };
+                res.json({ Status: 200, message: "Success Addons Update" })
+            });
+        }
+        if (action === "DeleteAddons") {
+            connection.query("DELETE FROM addons WHERE addons_id = ?", req.body.id, function (err, result) {
+                if (err) {
+                    res.json({ status: 400, message: "Delete Book Fails" })
+                    return
+                };
+                res.json({ status: 200, message: "Success Book Deleted" })
+            });
+        }
+    } catch (error) {
+        console.log(error.message);
     }
 })
 
@@ -130,55 +134,59 @@ router.post("/product_package_addon", async (req, res) => {
 
 router.post("/addons", (req, res) => {
     const { action } = req.body
-    if (action === "AddAddons") {
-        const { name, price } = req.body;
-        const data = {
-            addons_name: name,
-            addons_price: price,
+    try {
+        if (action === "AddAddons") {
+            const { name, price } = req.body;
+            const data = {
+                addons_name: name,
+                addons_price: price,
+            }
+            connection.query("INSERT INTO addons SET ?", data, function (err, result) {
+                if (err) {
+                    res.json({ Status: 400, message: "Adding Addons Fails" })
+                    return
+                };
+                res.json({ Status: 200, message: "Success Addons Added" })
+            });
         }
-        connection.query("INSERT INTO addons SET ?", data, function (err, result) {
-            if (err) {
-                res.json({ Status: 400, message: "Adding Addons Fails" })
-                return
-            };
-            res.json({ Status: 200, message: "Success Addons Added" })
-        });
-    }
-    if (action === "UpdateAddons") {
-        const { name, price, id } = req.body;
-        const data = {
-            addons_name: name,
-            addons_price: price,
-            addons_id: id
-        }
+        if (action === "UpdateAddons") {
+            const { name, price, id } = req.body;
+            const data = {
+                addons_name: name,
+                addons_price: price,
+                addons_id: id
+            }
 
-        connection.query("UPDATE addons SET ? WHERE addons_id = ?", [data, id], function (err, result) {
-            if (err) {
-                res.json({ Status: 400, message: "Updating Addons Fails" })
-            };
-            res.json({ Status: 200, message: "Success Addons Update" })
-        });
-    }
-    if (action === "getAllAddons") {
-        connection.query("SELECT * FROM addons", function (err, result) {
-            if (err) throw err;
-            res.send(result)
-        });
-    }
-    if (action === "getAddonsByID") {
-        connection.query("SELECT * FROM addons WHERE addons_id = ?", req.body.id, function (err, result) {
-            if (err) throw err;
-            res.send(result)
-        });
-    }
-    if (action === "DeleteAddons") {
-        connection.query("DELETE FROM addons WHERE addons_id = ?", req.body.id, function (err, result) {
-            if (err) {
-                res.json({ status: 400, message: "Delete Book Fails" })
-                return
-            };
-            res.json({ status: 200, message: "Success Book Deleted" })
-        });
+            connection.query("UPDATE addons SET ? WHERE addons_id = ?", [data, id], function (err, result) {
+                if (err) {
+                    res.json({ Status: 400, message: "Updating Addons Fails" })
+                };
+                res.json({ Status: 200, message: "Success Addons Update" })
+            });
+        }
+        if (action === "getAllAddons") {
+            connection.query("SELECT * FROM addons", function (err, result) {
+                if (err) throw err;
+                res.send(result)
+            });
+        }
+        if (action === "getAddonsByID") {
+            connection.query("SELECT * FROM addons WHERE addons_id = ?", req.body.id, function (err, result) {
+                if (err) throw err;
+                res.send(result)
+            });
+        }
+        if (action === "DeleteAddons") {
+            connection.query("DELETE FROM addons WHERE addons_id = ?", req.body.id, function (err, result) {
+                if (err) {
+                    res.json({ status: 400, message: "Delete Book Fails" })
+                    return
+                };
+                res.json({ status: 200, message: "Success Book Deleted" })
+            });
+        }
+    } catch (error) {
+        console.log(error.message);
     }
 
 })
