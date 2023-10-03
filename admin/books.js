@@ -130,7 +130,7 @@ router.post("/product_image", upload.array("file[]", 5), (req, res) => {
         })
     }
     if (action === "UpdateProductImage") {
-        console.log("----",req.files," ***", req.body );
+        // console.log("----",req.files," ***", req.body );
         const data = {
             product_name,
             product_description,
@@ -149,23 +149,20 @@ router.post("/product_image", upload.array("file[]", 5), (req, res) => {
             }
             if (req.files.length > 0) {
                 const imageQuery = "INSERT INTO product_image SET ?"
-                req.files.forEach((data, i) => {
+                req.files.forEach(async (data, i) => {
                     const newData = {
                         product_id: product_id,
                         pd_img_feature_image: data.filename
                     }
-                    connection.query(imageQuery, newData, (errr, ress) => {
-                        if (errr) {
-                            console.log(i, " - ", err);
-                        }
-                    })
+                    await fetchQuery(imageQuery, newData)
                 })
             }
-            // if (req.body.unlinkedimages && req.body.unlinkedimages.length>0) {
-                
-            // }
-
-            
+            const deleteImg = "DELETE FROM product_image WHERE pd_img_id = ?"
+            for (const imgId of req.body.unlinkedimages) {
+                new Promise(async (resolve, reject) => {
+                    await fetchQuery(deleteImg, imgId)
+                });
+            }
             res.json({ status: 200, message: "Success Book Updated" })
         })
     }
